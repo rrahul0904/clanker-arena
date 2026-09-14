@@ -28,7 +28,7 @@ async function runLocal({ challenge, code }) {
   try {
     await fs.writeFile(path.join(dir, 'candidate.py'), code);
     await fs.writeFile(path.join(dir, 'runner.py'), runnerSource(challenge));
-    const timeoutMs = Math.max(1500, challenge.runtimeMs * 2);
+    const timeoutMs = Math.max(5000, challenge.runtimeMs * 4);
     const result = await new Promise((resolve, reject) => {
       const child = spawn('python3', ['-I', 'runner.py'], { cwd: dir, stdio: ['ignore', 'pipe', 'pipe'] });
       let stdout = '';
@@ -60,9 +60,24 @@ async function runJudge0({ challenge, code, config }) {
   if (!config.judge0Url) throw new Error('JUDGE0_URL is required for Judge0 mode.');
   const headers = { 'content-type': 'application/json' };
   if (config.judge0Token) headers['X-Auth-Token'] = config.judge0Token;
+  const cpuSeconds = Math.max(0.1, Math.min(15, challenge.runtimeMs / 1000));
+  const wallSeconds = Math.max(1, Math.min(20, cpuSeconds * 3));
   const create = await fetch(`${config.judge0Url}/submissions?base64_encoded=false&wait=false`, {
     method: 'POST', headers,
-    body: JSON.stringify({ source_code: judge0Harness(challenge, code), language_id: config.judge0LanguageId })
+    body: JSON.stringify({
+      source_code: judge0Harness(challenge, code),
+      language_id: config.judge0LanguageId,
+      cpu_time_limit: cpuSeconds,
+      cpu_extra_time: 0.2,
+      wall_time_limit: wallSeconds,
+      memory_limit: config.judge0MemoryKb || 128000,
+      max_processes_and_or_threads: config.judge0MaxProcesses || 1,
+      enable_per_process_and_thread_time_limit: true,
+      enable_per_process_and_thread_memory_limit: true,
+      max_file_size: config.judge0MaxFileSizeKb || 64,
+      enable_network: false,
+      redirect_stderr_to_stdout: false
+    })
   });
   if (!create.ok) throw new Error(`Judge0 create failed (${create.status}).`);
   const { token } = await create.json();

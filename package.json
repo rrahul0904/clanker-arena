@@ -1,10 +1,12 @@
 {
   "name": "clanker-arena",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "type": "module",
   "description": "AI prompt-engineering coding arena inspired by public ClankerRank product behavior.",
-  "engines": { "node": ">=22" },
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "dev": "node --watch server.mjs",
     "start": "node server.mjs",
