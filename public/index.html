@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Clanker Arena</title>
+  <meta name="description" content="Benchmark prompt engineering by generating, judging, and ranking code solutions." />
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="#home"><span class="brand-mark">CA</span><span>Clanker Arena</span></a>
+    <nav><a href="#challenges">Challenges</a><a href="#leaderboard">Leaderboard</a><span id="status-pill" class="pill">checking…</span></nav>
+  </header>
+  <main id="app">
+    <section id="home" class="hero shell">
+      <div>
+        <p class="eyebrow">AI ENGINEERING ARENA</p>
+        <h1>Don’t write the solution.<br/><span>Write the instruction that earns it.</span></h1>
+        <p class="lede">Prompt an AI, run the generated Python against public and hidden tests, and climb a transparent rating ladder.</p>
+        <div class="hero-actions"><a class="button primary" href="#challenges">Enter the arena</a><a class="button ghost" href="#leaderboard">View rankings</a></div>
+      </div>
+      <div class="score-card">
+        <div class="score-header"><span>Live benchmark</span><span class="dot"></span></div>
+        <div class="metric"><strong>70</strong><span>Correctness</span></div>
+        <div class="metric"><strong>15</strong><span>Performance</span></div>
+        <div class="metric"><strong>10</strong><span>Code quality</span></div>
+        <div class="metric"><strong>5</strong><span>Prompt efficiency</span></div>
+        <div class="total"><span>Total</span><strong>100</strong></div>
+      </div>
+    </section>
+
+    <section id="challenges" class="shell section">
+      <div class="section-head"><div><p class="eyebrow">CHALLENGES</p><h2>Choose a benchmark</h2></div><p>Every submission uses the same scoring rubric. Hidden tests stay server-side.</p></div>
+      <div id="challenge-grid" class="challenge-grid"></div>
+    </section>
+
+    <section id="workspace" class="shell section hidden">
+      <button id="back" class="text-button">← Back to challenges</button>
+      <div class="workspace-grid">
+        <article class="panel challenge-panel">
+          <div id="challenge-meta"></div>
+          <h2 id="challenge-title"></h2>
+          <p id="challenge-description" class="muted"></p>
+          <h3>Constraints</h3><ul id="challenge-constraints"></ul>
+          <h3>Starter</h3><pre id="starter"></pre>
+          <h3>Public examples</h3><div id="examples"></div>
+        </article>
+        <article class="panel prompt-panel">
+          <div class="panel-title"><div><p class="eyebrow">PROMPT</p><h2>Instruct the model</h2></div><span id="prompt-count">0 chars</span></div>
+          <textarea id="prompt" maxlength="4000" placeholder="Describe the algorithm, edge cases, invariants, and constraints you want the model to respect…"></textarea>
+          <button id="generate" class="button primary wide">Generate Python</button>
+          <div id="generation-status" class="notice hidden"></div>
+          <div id="code-wrap" class="hidden"><div class="code-head"><h3>Generated candidate</h3><span id="provider" class="pill"></span></div><pre id="generated-code"></pre><button id="submit" class="button accent wide">Run hidden tests & submit</button></div>
+          <div id="result" class="result hidden"></div>
+        </article>
+      </div>
+    </section>
+
+    <section id="leaderboard" class="shell section">
+      <div class="section-head"><div><p class="eyebrow">LEADERBOARD</p><h2>Ranked by demonstrated skill</h2></div><p>Rating changes with benchmark difficulty and submission score.</p></div>
+      <div class="leaderboard"><div class="leader-head"><span>Rank</span><span>Engineer</span><span>Tier</span><span>Rating</span></div><div id="leader-rows"></div></div>
+    </section>
+  </main>
+  <footer class="shell"><span>Clanker Arena</span><span>Independent benchmark prototype. No copied ClankerRank assets or private APIs.</span></footer>
+  <script type="module" src="/app.js"></script>
+</body>
+</html>
