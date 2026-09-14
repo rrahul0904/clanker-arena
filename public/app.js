@@ -1,5 +1,5 @@
 const $ = (selector) => document.querySelector(selector);
-const state = { challenges: [], selected: null, generation: null };
+const state = { challenges: [], selected: null, generation: null, me: null };
 
 async function request(url, options = {}) {
   const response = await fetch(url, { ...options, headers: { 'content-type': 'application/json', ...(options.headers || {}) } });
@@ -48,7 +48,7 @@ async function generate() {
   const button = $('#generate'); button.disabled = true; button.textContent = 'Generating…';
   const status = $('#generation-status'); status.classList.remove('hidden'); status.textContent = 'Building candidate from your instruction…';
   try {
-    const { generation } = await request('/api/generate', { method: 'POST', body: JSON.stringify({ userId: 'u_demo', challengeSlug: state.selected.slug, prompt }) });
+    const { generation } = await request('/api/generate', { method: 'POST', headers: { 'idempotency-key': crypto.randomUUID() }, body: JSON.stringify({ challengeSlug: state.selected.slug, prompt }) });
     state.generation = generation;
     $('#generated-code').textContent = generation.code;
     $('#provider').textContent = `${generation.provider} · ${generation.model}`;
@@ -62,8 +62,8 @@ async function submit() {
   if (!state.selected || !state.generation) return;
   const button = $('#submit'); button.disabled = true; button.textContent = 'Judging…';
   try {
-    const { submission, user } = await request('/api/submissions', { method: 'POST', body: JSON.stringify({
-      userId: 'u_demo', challengeSlug: state.selected.slug, prompt: $('#prompt').value.trim(), generatedCode: state.generation.code, generationId: state.generation.id
+    const { submission, user } = await request('/api/submissions', { method: 'POST', headers: { 'idempotency-key': crypto.randomUUID() }, body: JSON.stringify({
+      challengeSlug: state.selected.slug, prompt: $('#prompt').value.trim(), generatedCode: state.generation.code, generationId: state.generation.id
     }) });
     const passed = submission.verdict.passed === submission.verdict.total;
     const result = $('#result'); result.className = `result ${passed ? 'success' : 'failure'}`;
@@ -79,14 +79,14 @@ async function submit() {
 
 async function loadLeaderboard() {
   const { leaderboard } = await request('/api/leaderboard');
-  $('#leader-rows').innerHTML = leaderboard.map((row) => `<div class="leader-row ${row.id === 'u_demo' ? 'you' : ''}"><span class="rank">#${row.rank}</span><span class="engineer"><strong>${escapeHtml(row.displayName)}</strong><span>@${escapeHtml(row.username)} · ${row.solvedCount} solved</span></span><span>${row.tier}</span><span class="rating">${row.rating}</span></div>`).join('');
+  $('#leader-rows').innerHTML = leaderboard.map((row) => `<div class="leader-row ${row.id === state.me?.id ? 'you' : ''}"><span class="rank">#${row.rank}</span><span class="engineer"><strong>${escapeHtml(row.displayName)}</strong><span>@${escapeHtml(row.username)} · ${row.solvedCount} solved</span></span><span>${row.tier}</span><span class="rating">${row.rating}</span></div>`).join('');
 }
 
 async function boot() {
   try {
-    const [health, challengeData] = await Promise.all([request('/api/health'), request('/api/challenges')]);
+    const [health, challengeData, meData] = await Promise.all([request('/api/health'), request('/api/challenges'), request('/api/me')]);
     $('#status-pill').textContent = `${health.generatorMode}/${health.judgeMode}`;
-    state.challenges = challengeData.challenges; renderChallenges(); await loadLeaderboard();
+    state.me = meData.user; state.challenges = challengeData.challenges; renderChallenges(); await loadLeaderboard();
   } catch (error) { $('#status-pill').textContent = 'offline'; console.error(error); }
 }
 

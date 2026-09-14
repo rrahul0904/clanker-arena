@@ -48,3 +48,30 @@ test('repeating the same perfect score with a fresh generation cannot farm ratin
   assert.equal(store.getUser('u_demo').rating, afterFirst);
   fs.rmSync(dir, { recursive: true, force: true });
 });
+
+test('generation and submission idempotency replay the original result without extra rating', async () => {
+  const { dir, store, service } = fixture();
+  const prompt = 'Implement stable unique preserving order and edge cases.';
+  const first = await service.generate({ userId: 'u_demo', challengeSlug: 'stable-unique', prompt, idempotencyKey: 'generate-1' });
+  const again = await service.generate({ userId: 'u_demo', challengeSlug: 'stable-unique', prompt: 'ignored retry payload', idempotencyKey: 'generate-1' });
+  assert.equal(again.id, first.id);
+
+  const result = await service.submit({ userId: 'u_demo', challengeSlug: 'stable-unique', prompt, generatedCode: first.code, generationId: first.id, idempotencyKey: 'submit-1' });
+  const rating = store.getUser('u_demo').rating;
+  const replay = await service.submit({ userId: 'u_demo', challengeSlug: 'stable-unique', prompt, generatedCode: first.code, generationId: first.id, idempotencyKey: 'submit-1' });
+  assert.equal(replay.replayed, true);
+  assert.equal(replay.submission.id, result.submission.id);
+  assert.equal(store.getUser('u_demo').rating, rating);
+  fs.rmSync(dir, { recursive: true, force: true });
+});
+
+test('generation rate limits are enforced before provider execution', async () => {
+  const { dir, store } = fixture();
+  const service = createSubmissionService({ store, config: { generatorMode: 'mock', judgeMode: 'local', allowUnsafeRemoteCodeLocally: false, generationLimitPerHour: 1 } });
+  await service.generate({ userId: 'u_demo', challengeSlug: 'stable-unique', prompt: 'Implement stable unique correctly.' });
+  await assert.rejects(
+    () => service.generate({ userId: 'u_demo', challengeSlug: 'merge-intervals', prompt: 'Implement interval merging correctly.' }),
+    (error) => error.statusCode === 429
+  );
+  fs.rmSync(dir, { recursive: true, force: true });
+});
